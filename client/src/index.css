@@ -1,0 +1,66 @@
+/* importing Inter font */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+/* tailwind directives */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* theme css variables - still using these for dynamic theme switching */
+:root {
+  --font-main: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+[data-theme="dark"] {
+  --bg-primary: #0f0f23;
+  --bg-secondary: #1a1a2e;
+  --card-bg: #16213e;
+  --card-bg-hover: #1a2744;
+  --border-color: #2a2a4a;
+  --text-primary: #e4e4f0;
+  --text-secondary: #8888a4;
+  --accent: #6366f1;
+  --accent-hover: #818cf8;
+  --success: #22c55e;
+  --danger: #f43f5e;
+  --warning: #eab308;
+  --income-bg: rgba(34, 197, 94, 0.1);
+  --expense-bg: rgba(244, 63, 94, 0.1);
+  --shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
+  --input-bg: #1e1e3a;
+}
+
+[data-theme="light"] {
+  --bg-primary: #f0f2f5;
+  --bg-secondary: #ffffff;
+  --card-bg: #ffffff;
+  --card-bg-hover: #f8f9fb;
+  --border-color: #e2e4e9;
+  --text-primary: #1a1a2e;
+  --text-secondary: #6b7280;
+  --accent: #6366f1;
+  --accent-hover: #4f46e5;
+  --success: #16a34a;
+  --danger: #dc2626;
+  --warning: #ca8a04;
+  --income-bg: rgba(22, 163, 74, 0.08);
+  --expense-bg: rgba(220, 38, 38, 0.08);
+  --shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+  --input-bg: #f3f4f6;
+}
+
+/* base styles */
+body {
+  font-family: var(--font-main);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  transition: background 0.3s, color 0.3s;
+}
+
+a { color: var(--accent); }
+a:hover { color: var(--accent-hover); }
+
+/* spinner animation */
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
