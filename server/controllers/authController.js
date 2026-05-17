@@ -3,7 +3,7 @@ const jwt = require('jsonwebtoken');
 const { body, validationResult } = require('express-validator');
 const User = require('../models/User');
 
-// validation rules for registration form
+// check signup form data
 const registerValidation = [
   body('name').trim().notEmpty().withMessage('Name is required'),
   body('email').isEmail().withMessage('Valid email is required'),
@@ -36,7 +36,7 @@ async function register(req, res) {
 
     const { name, email, password } = req.body;
 
-    // check if email already exists
+    // see if user is already in db
     const existingUser = await User.findByEmail(email);
     if (existingUser) {
       return res.status(400).json({ message: 'Email already registered.' });
@@ -54,7 +54,7 @@ async function register(req, res) {
       role: 'user'
     });
 
-    // generating token so user is logged in after register
+    // give them a token right away
     const token = generateToken(user);
 
     res.status(201).json({

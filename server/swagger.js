@@ -6,7 +6,7 @@ const options = {
     info: {
       title: 'Finance Tracker API',
       version: '1.0.0',
-      description: 'API documentation for my finance tracker project',
+      description: 'my finance tracker api docs',
     },
     servers: [
       {
@@ -31,7 +31,7 @@ const options = {
   },
   // reading comments in routes folder
   apis: ['./routes/*.js'],
-};
+}; // added swagger options
 
 const specs = swaggerJsdoc(options);
 module.exports = specs;

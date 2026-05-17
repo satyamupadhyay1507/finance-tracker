@@ -1,4 +1,4 @@
-// pagination component
+// simple pagination component for transactions
 function Pagination({ currentPage, totalPages, onPageChange }) {
   if (totalPages <= 1) return null;
 
@@ -11,6 +11,7 @@ function Pagination({ currentPage, totalPages, onPageChange }) {
       start = Math.max(1, end - maxVisible + 1);
     }
     for (let i = start; i <= end; i++) {
+      // push page numbers to array
       pages.push(i);
     }
     return pages;

@@ -1,17 +1,13 @@
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 
-// protects routes that need login
+// this wrapper protects routes so unauthenticated users get bounced
 function ProtectedRoute({ children, roles }) {
   const { user, loading } = useAuth();
 
   if (loading) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[300px] gap-4 text-[var(--text-secondary)]">
-        <div className="w-10 h-10 border-[3px] border-[var(--border-color)] border-t-[var(--accent)] rounded-full animate-spin"></div>
-        <p>Loading...</p>
-      </div>
-    );
+    // just return simple text for now while loading
+    return <div style={{ textAlign: 'center', marginTop: '50px' }}>Loading...</div>;
   }
 
   if (!user) {

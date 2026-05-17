@@ -5,9 +5,8 @@ import { ThemeProvider } from './context/ThemeContext';
 import ProtectedRoute from './components/Layout/ProtectedRoute';
 import AppLayout from './components/Layout/AppLayout';
 
-// lazy loading routes so app loads faster initially
-const LoginPage = lazy(() => import('./pages/LoginPage'));
-const RegisterPage = lazy(() => import('./pages/RegisterPage'));
+import LoginPage from './pages/LoginPage';
+import RegisterPage from './pages/RegisterPage';
 const DashboardPage = lazy(() => import('./pages/DashboardPage'));
 const TransactionsPage = lazy(() => import('./pages/TransactionsPage'));
 const AdminPage = lazy(() => import('./pages/AdminPage'));
@@ -17,8 +16,7 @@ function App() {
     <ThemeProvider>
       <AuthProvider>
         <BrowserRouter>
-          {/* suspense shows loading while chunks are downloading */}
-          <Suspense fallback={<div className="flex justify-center p-10">Loading page...</div>}>
+          <Suspense fallback={<div>Loading app...</div>}>
             <Routes>
               {/* public routes */}
               <Route path="/login" element={<LoginPage />} />
