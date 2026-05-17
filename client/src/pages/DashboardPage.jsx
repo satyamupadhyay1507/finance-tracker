@@ -7,8 +7,8 @@ import {
 import { fetchSummary, fetchMonthlyOverview, fetchCategoryBreakdown, fetchTrends } from '../services/dataService';
 import { useAuth } from '../context/AuthContext';
 
-const COLORS = ['#6366f1','#8b5cf6','#a855f7','#d946ef','#ec4899','#f43f5e','#f97316','#eab308','#22c55e','#14b8a6','#06b6d4'];
-const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const COLORS = ['#6366f1', '#8b5cf6', '#a855f7', '#d946ef', '#ec4899', '#f43f5e', '#f97316', '#eab308', '#22c55e', '#14b8a6', '#06b6d4'];
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 // dashboard page
 function DashboardPage() {
@@ -42,7 +42,7 @@ function DashboardPage() {
   // useMemo caches the array so it doesnt recompute on every render
   const monthlyData = useMemo(() => {
     if (!monthly?.months) return [];
-    return monthly.months.map(m => ({ name: MONTHS[m.month-1], income: m.income, expense: m.expense }));
+    return monthly.months.map(m => ({ name: MONTHS[m.month - 1], income: m.income, expense: m.expense }));
   }, [monthly]);
 
   const pieData = useMemo(() => {
@@ -75,7 +75,7 @@ function DashboardPage() {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
-        
+
         <div className="group p-6 rounded-2xl bg-white dark:bg-gray-800 shadow-sm border border-gray-100 dark:border-gray-700 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 relative overflow-hidden">
           <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 rounded-full blur-3xl -mr-10 -mt-10 transition-transform group-hover:scale-150"></div>
           <div className="flex flex-col relative z-10">
@@ -134,7 +134,7 @@ function DashboardPage() {
             <LineChart data={monthlyData} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
               <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#888' }} dy={10} />
               <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#888' }} tickFormatter={(val) => `₹${val}`} />
-              <Tooltip 
+              <Tooltip
                 contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)' }}
                 cursor={{ stroke: '#cbd5e1', strokeWidth: 1, strokeDasharray: '4 4' }}
               />
@@ -153,21 +153,22 @@ function DashboardPage() {
           {pieData.length > 0 ? (
             <ResponsiveContainer width="100%" height={300}>
               <PieChart>
-                <Pie 
-                  data={pieData} 
-                  cx="50%" cy="50%" 
-                  innerRadius={70} 
-                  outerRadius={100} 
-                  dataKey="value" 
+                <Pie
+                  data={pieData}
+                  cx="50%" cy="50%"
+                  innerRadius={70}
+                  outerRadius={100}
+                  dataKey="value"
                   paddingAngle={5}
                   stroke="none"
                 >
-                  {pieData.map((e,i) => <Cell key={i} fill={COLORS[i%COLORS.length]} />)}
+                  {pieData.map((e, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
                 </Pie>
-                <Tooltip 
+                <Tooltip
                   contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1)' }}
                   formatter={(value) => [`₹${value}`, 'Amount']}
                 />
+                <Legend iconType="circle" wrapperStyle={{ paddingTop: '20px', fontSize: '13px' }} />
               </PieChart>
             </ResponsiveContainer>
           ) : (
