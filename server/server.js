@@ -5,6 +5,15 @@ const { sanitizeInput, securityHeaders } = require('./middleware/sanitize');
 const swaggerUi = require('swagger-ui-express');
 const swaggerSpecs = require('./swagger');
 
+
+process.on("uncaughtException", (err) => {
+  console.error("Uncaught Exception:", err);
+});
+
+process.on("unhandledRejection", (err) => {
+  console.error("Unhandled Rejection:", err);
+});
+
 // dotenv config
 dotenv.config();
 
