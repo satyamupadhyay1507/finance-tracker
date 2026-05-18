@@ -16,7 +16,7 @@ app.use(securityHeaders()); // added security headers
 // console.log("starting middleware"); // debug // added security headers
 // console.log("starting middleware");
 app.use(cors({
-  origin: ['http://localhost:5173', 'http://localhost:5174'],
+  origin: [process.env.CLIENT_URL || 'http://localhost:5173', 'http://localhost:5174'],
   credentials: true
 }));
 app.use(express.json());

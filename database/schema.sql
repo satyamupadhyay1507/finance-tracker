@@ -1,6 +1,6 @@
 -- creating the database first
-CREATE DATABASE IF NOT EXISTS finance_tracker;
-USE finance_tracker;
+-- CREATE DATABASE IF NOT EXISTS finance_tracker;
+-- USE finance_tracker;
 
 -- users table to store login info
 -- role can be admin, user or read-only
