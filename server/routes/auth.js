@@ -39,8 +39,7 @@ router.post('/register', authLimiter, registerValidation, register);
  *       200:
  *         description: Login successful
  */
-router.post('/login', authLimiter, loginValidation, login);
-
+router.post('/login', loginValidation, login);
 /**
  * @swagger
  * /api/auth/me:

@@ -80,12 +80,21 @@ async function login(req, res) {
 
     // finding user by email
     const user = await User.findByEmail(email);
+
+    console.log("USER:", user);
+    console.log("ENTERED PASSWORD:", password);
+
     if (!user) {
       return res.status(401).json({ message: 'Invalid email or password.' });
     }
 
+    console.log("HASH FROM DB:", user.password);
+
     // comparing password with hashed password
     const isMatch = await bcrypt.compare(password, user.password);
+
+    console.log("PASSWORD MATCH:", isMatch);
+
     if (!isMatch) {
       return res.status(401).json({ message: 'Invalid email or password.' });
     }
@@ -97,6 +106,7 @@ async function login(req, res) {
       token,
       user: { id: user.id, name: user.name, email: user.email, role: user.role }
     });
+
   } catch (err) {
     console.error('Login error:', err);
     res.status(500).json({ message: 'Server error during login.' });
