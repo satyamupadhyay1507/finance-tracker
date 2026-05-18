@@ -16,11 +16,22 @@ app.use(securityHeaders()); // added security headers
 // console.log("starting middleware"); // debug // added security headers
 // console.log("starting middleware");
 app.use(cors({
-  origin: [process.env.CLIENT_URL || 'http://localhost:5173', 'http://localhost:5174'],
+
+  origin: "*",
+
+  methods: ["GET", "POST", "PUT", "DELETE"],
+
   credentials: true
+
 }));
 app.use(express.json());
 app.use(sanitizeInput);
+
+app.get("/", (req, res) => {
+
+  res.send("Backend Working");
+
+});
 
 // routes
 const authRoutes = require('./routes/auth');
@@ -70,6 +81,8 @@ app.use((err, req, res, next) => {
   res.status(500).json({ message: 'Internal server error' });
 });
 
-app.listen(PORT, () => {
+app.listen(PORT, "0.0.0.0", () => {
+
   console.log(`server is running on port ${PORT}`);
+
 });
