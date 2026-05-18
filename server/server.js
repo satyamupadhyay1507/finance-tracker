@@ -43,6 +43,22 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok' });
 });
 
+// seed route
+app.get('/api/seed', async (req, res) => {
+  try {
+    const fs = require('fs');
+    const path = require('path');
+    const pool = require('./config/db');
+    const sqlPath = path.join(__dirname, '../database/seed_data.sql');
+    const sql = fs.readFileSync(sqlPath, 'utf8');
+    await pool.query(sql);
+    res.json({ message: 'Database seeded successfully with demo data!' });
+  } catch (err) {
+    console.error('Seed error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // 404
 app.use((req, res) => {
   res.status(404).json({ message: 'Route not found' });
