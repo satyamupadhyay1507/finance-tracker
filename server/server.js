@@ -4,7 +4,7 @@ const dotenv = require('dotenv');
 const { sanitizeInput, securityHeaders } = require('./middleware/sanitize');
 const swaggerUi = require('swagger-ui-express');
 const swaggerSpecs = require('./swagger');
-
+const pool = require('./config/db');
 
 process.on("uncaughtException", (err) => {
   console.error("Uncaught Exception:", err);
@@ -96,3 +96,33 @@ app.listen(PORT, "0.0.0.0", () => {
   console.log(`server is running on port ${PORT}`);
 
 });
+
+
+const bcrypt = require('bcryptjs');
+
+async function createAdmin() {
+  try {
+    const hashedPassword = await bcrypt.hash('password123', 10);
+
+    await pool.execute(
+      'DELETE FROM users WHERE email = ?',
+      ['admin@demo.com']
+    );
+
+    await pool.execute(
+      'INSERT INTO users (name, email, password, role) VALUES (?, ?, ?, ?)',
+      [
+        'Admin User',
+        'admin@demo.com',
+        hashedPassword,
+        'admin'
+      ]
+    );
+
+    console.log('ADMIN CREATED');
+  } catch (err) {
+    console.log(err);
+  }
+}
+
+createAdmin();
