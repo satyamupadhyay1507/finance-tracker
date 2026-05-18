@@ -97,16 +97,19 @@ app.listen(PORT, "0.0.0.0", () => {
 
 });
 
-
 const bcrypt = require('bcryptjs');
 
-async function createAdmin() {
+async function createDemoUsers() {
   try {
     const hashedPassword = await bcrypt.hash('password123', 10);
 
     await pool.execute(
-      'DELETE FROM users WHERE email = ?',
-      ['admin@demo.com']
+      'DELETE FROM users WHERE email IN (?, ?, ?)',
+      [
+        'admin@demo.com',
+        'user@demo.com',
+        'readonly@demo.com'
+      ]
     );
 
     await pool.execute(
@@ -119,10 +122,31 @@ async function createAdmin() {
       ]
     );
 
-    console.log('ADMIN CREATED');
+    await pool.execute(
+      'INSERT INTO users (name, email, password, role) VALUES (?, ?, ?, ?)',
+      [
+        'Regular User',
+        'user@demo.com',
+        hashedPassword,
+        'user'
+      ]
+    );
+
+    await pool.execute(
+      'INSERT INTO users (name, email, password, role) VALUES (?, ?, ?, ?)',
+      [
+        'Read Only User',
+        'readonly@demo.com',
+        hashedPassword,
+        'read-only'
+      ]
+    );
+
+    console.log('DEMO USERS CREATED');
+
   } catch (err) {
     console.log(err);
   }
 }
 
-createAdmin();
+createDemoUsers();
