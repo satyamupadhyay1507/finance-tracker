@@ -30,10 +30,11 @@ app.use(cors({
 
   methods: ["GET", "POST", "PUT", "DELETE"],
 
-  credentials: true
+  credentials: false
 
 }));
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 app.use(sanitizeInput);
 
 app.get("/", (req, res) => {
