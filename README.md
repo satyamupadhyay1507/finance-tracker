@@ -1,67 +1,136 @@
-# Personal Finance Tracker
+# Task Board - Full Stack Application
 
-This is a full-stack personal finance management application that I built. It uses React for the frontend and Node.js for the backend. The database is MySQL and I also used Redis for caching.
+A clean, production-ready Task Board application built with **Next.js (App Router)**, **TypeScript**, **Prisma ORM**, **PostgreSQL**, and **Tailwind CSS**.
 
-## Features I Implemented
-- User Auth (login and signup with JWT)
-- Role Based Access (admin, user, read-only)
-- Add, Edit, Delete transactions (income/expense in Rupees ₹)
-- Dashboard with Monthly and Yearly charts
-- Pagination and Virtual Scrolling for transaction lists
-- Modern Glassmorphism UI (looks really premium!)
-- Swagger API Documentation
+Users can register an account, log in securely, create tasks with initial statuses, view their personalized task list, and update task statuses in real-time.
 
-## Tech Stack
-- **Frontend:** React 19, Vite, Tailwind CSS, Recharts, React-Window (for virtual scrolling)
-- **Backend:** Node.js, Express, Swagger
-- **Database:** MySQL
-- **Caching:** Redis
+---
 
-## How to run locally
+## 🛠 Tech Stack
 
-### 1. Setup Database
-First you need to create the database in mysql using the schema provided.
-```bash
-mysql -u root -p < database/schema.sql
+- **Framework:** Next.js (App Router, Server Components & Route Handlers)
+- **Language:** TypeScript
+- **Database:** PostgreSQL
+- **ORM:** Prisma ORM
+- **Authentication:** Custom JWT session management stored in `HttpOnly` cookies
+- **Password Hashing:** `bcryptjs`
+- **Validation:** Zod schema validation
+- **Styling:** Tailwind CSS & Lucide Icons
+
+---
+
+## 🔐 Authentication Flow Explanation
+
+1. **User Signup (`POST /api/auth/signup`):**
+   - User inputs email, password, and optional name.
+   - The password is securely hashed server-side using `bcryptjs` (salt rounds: 10).
+   - A new `User` record is created in PostgreSQL via Prisma.
+   - A JSON Web Token (JWT) signed with `HS256` via `jose` is generated.
+   - The token is attached to the HTTP response as a `SameSite=Lax`, `HttpOnly` cookie named `auth_session`.
+
+2. **User Login (`POST /api/auth/login`):**
+   - Credentials are submitted and validated against the database.
+   - Password validity is verified using `bcrypt.compare`.
+   - Upon verification, an `HttpOnly` session cookie is set.
+
+3. **Session Verification (`GET /api/auth/me`):**
+   - Protected API routes and pages verify the `auth_session` cookie server-side.
+   - This ensures full XSS protection since client-side JavaScript cannot read `HttpOnly` session tokens.
+
+4. **Logout (`POST /api/auth/logout`):**
+   - Clears the `auth_session` cookie immediately.
+
+---
+
+## 🗄 Database Schema Explanation
+
+The application uses a clean relational schema with a 1-to-many relationship between `User` and `Task`.
+
+### Entity Relationship Diagram (ERD)
+
+```
++--------------------------------+       +--------------------------------+
+|              USER              |       |              TASK              |
++--------------------------------+       +--------------------------------+
+| id        : String (PK, CUID)  | 1   N | id        : String (PK, CUID)  |
+| email     : String (Unique)    |<----->| title     : String             |
+| password  : String (Hashed)    |       | status    : Enum (TODO/...)    |
+| name      : String?            |       | userId    : String (FK)        |
+| createdAt : DateTime           |       | createdAt : DateTime           |
+| updatedAt : DateTime           |       | updatedAt : DateTime           |
++--------------------------------+       +--------------------------------+
 ```
 
-### 2. Start Redis (Optional)
-Make sure redis is running locally if you want caching to work. But don't worry, the app will still work fine without it! (I added a safe fallback).
-```bash
-redis-server
+### Prisma Schema Definitions
+
+```prisma
+enum TaskStatus {
+  TODO
+  IN_PROGRESS
+  DONE
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  name      String?
+  tasks     Task[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Task {
+  id        String     @id @default(cuid())
+  title     String
+  status    TaskStatus @default(TODO)
+  userId    String
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  @@index([userId])
+}
 ```
 
-### 3. Run Backend
-Go to the server folder and start it up.
+---
+
+## 🚀 Steps to Run Locally
+
+### 1. Prerequisites
+- Node.js (v18.x or later)
+- PostgreSQL database (Local instance or free cloud database on Neon/Supabase)
+
+### 2. Environment Setup
+Clone the repository and install dependencies:
 ```bash
-cd server
+git clone https://github.com/satyamupadhyay1507/finance-tracker.git task-board
+cd task-board
 npm install
+```
+
+Create a `.env` file in the root directory:
+```env
+DATABASE_URL="postgresql://user:password@localhost:5432/taskboard?sslmode=require"
+JWT_SECRET="your-super-secret-jwt-key"
+```
+
+### 3. Database Migration & Prisma Setup
+Generate the Prisma client and push the schema to your database:
+```bash
+npx prisma generate
+npx prisma db push
+```
+
+### 4. Run Development Server
+Start the local Next.js server:
+```bash
 npm run dev
 ```
-Note: You need to create a `.env` file with your db password and JWT secret before running.
+Open [http://localhost:3000](http://localhost:3000) in your browser to test the app.
 
-### 4. Run Frontend
-In a new terminal window:
-```bash
-cd client
-npm install
-npm run dev
-```
+---
 
-## Demo accounts to test
-- admin@demo.com / password123
-- user@demo.com / password123
-- readonly@demo.com / password123
+## 🌐 Live URL
 
-## API Documentation
-You can view the Swagger API documentation by going to `http://localhost:5001/api-docs` when the server is running.
-
-## Performance Metrics & Optimizations
-- **React.lazy()** is used for route-based code splitting so pages load fast.
-- **useMemo and useCallback** are used heavily to optimize chart rendering and avoid unnecessary component re-renders (learned this the hard way).
-- **Virtual Scrolling:** Implemented using `react-window` in the Transactions page so it can handle thousands of rows without lagging the browser.
-- **Redis Caching:** 
-  - Analytics data cached for 15 minutes.
-  - Categories cached for 1 hour.
-  - Cache is invalidated on transaction updates.
-- **Rate Limiting:** Auth routes restricted to 5/15m to prevent brute force attacks.
+- **Production Deployment:** [https://finance-tracker-green-six.vercel.app](https://finance-tracker-green-six.vercel.app) *(or updated Vercel deployment link)*
