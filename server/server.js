@@ -18,7 +18,7 @@ process.on("unhandledRejection", (err) => {
 dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 5000; // default 5000
+const PORT = process.env.PORT || 5001; // default 5001 (prevents macOS AirPlay port 5000 conflict)
 
 // middlewares
 app.use(securityHeaders()); // added security headers

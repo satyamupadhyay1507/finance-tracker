@@ -20,7 +20,7 @@ const loginValidation = [
 function generateToken(user) {
   return jwt.sign(
     { id: user.id, name: user.name, email: user.email, role: user.role },
-    process.env.JWT_SECRET,
+    process.env.JWT_SECRET || 'finance_tracker_default_jwt_secret',
     { expiresIn: '24h' }
   );
 }

@@ -17,7 +17,7 @@ function verifyToken(req, res, next) {
 
   try {
     // verifying the token with our secret key
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'finance_tracker_default_jwt_secret');
     req.user = decoded; // saving user info in request
     next();
   } catch (err) {
