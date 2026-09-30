@@ -23,10 +23,10 @@ async function getSummary(req, res) {
     );
 
     const data = {
-      totalIncome: parseFloat(rows[0].totalIncome),
-      totalExpenses: parseFloat(rows[0].totalExpenses),
-      balance: parseFloat(rows[0].totalIncome) - parseFloat(rows[0].totalExpenses),
-      transactionCount: rows[0].transactionCount
+      totalIncome: parseFloat(rows[0].totalIncome) || 0,
+      totalExpenses: parseFloat(rows[0].totalExpenses) || 0,
+      balance: (parseFloat(rows[0].totalIncome) || 0) - (parseFloat(rows[0].totalExpenses) || 0),
+      transactionCount: parseInt(rows[0].transactionCount, 10) || 0
     };
 
     // save to cache for 15 mins (900 secs)
@@ -43,7 +43,7 @@ async function getSummary(req, res) {
 async function getMonthlyOverview(req, res) {
   try {
     const userId = req.user.id;
-    const year = parseInt(req.query.year) || new Date().getFullYear();
+    const year = parseInt(req.query.year, 10) || new Date().getFullYear();
 
     const [rows] = await pool.execute(
       `SELECT 
@@ -59,8 +59,8 @@ async function getMonthlyOverview(req, res) {
 
     const months = [];
     for (let i = 1; i <= 12; i++) {
-      const income = rows.find(r => r.month === i && r.type === 'income');
-      const expense = rows.find(r => r.month === i && r.type === 'expense');
+      const income = rows.find(r => Number(r.month) === i && r.type === 'income');
+      const expense = rows.find(r => Number(r.month) === i && r.type === 'expense');
       months.push({
         month: i,
         income: income ? parseFloat(income.total) : 0,
@@ -68,7 +68,7 @@ async function getMonthlyOverview(req, res) {
       });
     }
 
-    res.json({ year: parseInt(year), months });
+    res.json({ year, months });
   } catch (err) {
     console.error('getMonthlyOverview error:', err);
     res.status(500).json({ message: 'Error retrieving monthly overview.', error: err.message });
@@ -99,8 +99,8 @@ async function getCategoryBreakdown(req, res) {
       categories: rows.map(r => ({
         name: r.name,
         icon: r.icon,
-        total: parseFloat(r.total),
-        count: r.count
+        total: parseFloat(r.total) || 0,
+        count: parseInt(r.count, 10) || 0
       }))
     };
     
@@ -117,8 +117,12 @@ async function getCategoryBreakdown(req, res) {
 async function getIncomeVsExpense(req, res) {
   try {
     const userId = req.user.id;
-    const months = parseInt(req.query.months) || 6;
+    const months = parseInt(req.query.months, 10) || 6;
     const safeMonths = Math.max(1, Math.min(24, months));
+
+    const cutoff = new Date();
+    cutoff.setMonth(cutoff.getMonth() - safeMonths);
+    const cutoffDateStr = cutoff.toISOString().split('T')[0];
 
     const [rows] = await pool.execute(
       `SELECT 
@@ -126,18 +130,19 @@ async function getIncomeVsExpense(req, res) {
         type,
         SUM(amount) as total
        FROM transactions
-       WHERE user_id = ? AND date >= DATE_SUB(CURDATE(), INTERVAL ${safeMonths} MONTH)
+       WHERE user_id = ? AND date >= ?
        GROUP BY period, type
        ORDER BY period`,
-      [userId]
+      [userId, cutoffDateStr]
     );
 
     const periodsMap = {};
     rows.forEach(r => {
-      if (!periodsMap[r.period]) {
-        periodsMap[r.period] = { period: r.period, income: 0, expense: 0 };
+      const p = String(r.period);
+      if (!periodsMap[p]) {
+        periodsMap[p] = { period: p, income: 0, expense: 0 };
       }
-      periodsMap[r.period][r.type] = parseFloat(r.total);
+      periodsMap[p][r.type] = parseFloat(r.total) || 0;
     });
 
     res.json({ trends: Object.values(periodsMap) });

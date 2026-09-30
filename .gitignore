@@ -9,3 +9,7 @@ npm-debug.log*
 
 # Local Netlify folder
 .netlify
+
+# Database files
+data/
+*.db

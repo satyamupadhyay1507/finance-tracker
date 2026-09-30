@@ -5,7 +5,7 @@ const { sanitizeInput, securityHeaders } = require('./middleware/sanitize');
 const swaggerUi = require('swagger-ui-express');
 const swaggerSpecs = require('./swagger');
 const pool = require('./config/db');
-const { initializeDatabase, dbHost } = require('./config/db');
+const { initializeDatabase, getDbStatus } = require('./config/db');
 
 process.on("uncaughtException", (err) => {
   console.error("Uncaught Exception:", err);
@@ -54,19 +54,19 @@ app.use('/api/users', userRoutes);
 // test route with database connection health check
 app.get('/api/health', async (req, res) => {
   try {
-    const [result] = await pool.query('SELECT 1 + 1 AS solution');
+    const dbInfo = getDbStatus();
     const [userRows] = await pool.query('SELECT COUNT(*) as count FROM users').catch(() => [[{ count: 0 }]]);
     res.json({
       status: 'ok',
-      database: 'connected',
-      dbHost: dbHost || 'localhost',
+      database: dbInfo.mode === 'mysql' ? 'connected' : 'resilient-storage',
+      engine: dbInfo.mode,
+      configuredDbHost: dbInfo.mysqlConfiguredHost || 'localhost',
       usersCount: userRows[0]?.count || 0
     });
   } catch (err) {
     res.status(503).json({
       status: 'error',
       database: 'disconnected',
-      dbHost: dbHost || 'localhost',
       error: err.message,
       code: err.code
     });
@@ -100,9 +100,8 @@ app.get('/api/seed', async (req, res) => {
           await pool.query(statement);
           executed++;
         } catch (e) {
-          // Ignore duplicate entries (e.g. users or transactions already inserted)
           if (e.code !== 'ER_DUP_ENTRY') {
-            console.warn('Seed warning:', e.message);
+            console.warn('Seed statement warning:', e.message);
           }
         }
       }
