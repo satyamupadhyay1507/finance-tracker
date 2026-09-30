@@ -104,32 +104,6 @@ async function initSqliteEngine() {
     sqliteDb = new SQL.Database();
   }
 
-  // Register MySQL-compatible SQL functions in SQLite
-  sqliteDb.create_function("MONTH", (d) => {
-    if (!d) return 1;
-    const parts = String(d).split("-");
-    return parts.length > 1 ? parseInt(parts[1], 10) : 1;
-  });
-
-  sqliteDb.create_function("YEAR", (d) => {
-    if (!d) return 2026;
-    const parts = String(d).split("-");
-    return parseInt(parts[0], 10) || 2026;
-  });
-
-  sqliteDb.create_function("DATE_FORMAT", (d, fmt) => {
-    if (!d) return "";
-    return String(d).substring(0, 7);
-  });
-
-  sqliteDb.create_function("CURDATE", () => new Date().toISOString().split("T")[0]);
-
-  sqliteDb.create_function("DATE_SUB", (d, days) => {
-    const dt = new Date(d || Date.now());
-    dt.setDate(dt.getDate() - (parseInt(days, 10) || 0));
-    return dt.toISOString().split("T")[0];
-  });
-
   // Create tables in SQLite
   sqliteDb.run(`
     CREATE TABLE IF NOT EXISTS users (
@@ -255,16 +229,27 @@ setInterval(() => {
   }
 }, 60000);
 
-// SQLite execute helper matching mysql2 format
+// SQLite execute helper with SQL dialect translation and safe parameter binding
 function executeSqlite(sql, params = []) {
   if (!sqliteDb) throw new Error('SQLite engine not initialized');
 
-  const trimmed = sql.trim();
-  const isSelect = /^(SELECT|PRAGMA|SHOW)/i.test(trimmed);
+  // Translate MySQL-specific syntax to native SQLite syntax
+  let cleanSql = sql
+    .replace(/DATE_FORMAT\s*\(\s*([a-zA-Z0-9_.]+)\s*,\s*['"][^'"]*['"]\s*\)/gi, 'SUBSTR($1, 1, 7)')
+    .replace(/MONTH\s*\(\s*([a-zA-Z0-9_.]+)\s*\)/gi, 'CAST(SUBSTR($1, 6, 2) AS INTEGER)')
+    .replace(/YEAR\s*\(\s*([a-zA-Z0-9_.]+)\s*\)/gi, 'CAST(SUBSTR($1, 1, 4) AS INTEGER)')
+    .replace(/CURDATE\s*\(\s*\)/gi, "date('now')")
+    .replace(/ON DUPLICATE KEY UPDATE [^;]+/gi, '')
+    .trim();
+
+  const safeParams = params.map(p => p === undefined ? null : p);
+  const isSelect = /^(SELECT|PRAGMA|SHOW)/i.test(cleanSql);
 
   if (isSelect) {
-    const stmt = sqliteDb.prepare(sql);
-    stmt.bind(params);
+    const stmt = sqliteDb.prepare(cleanSql);
+    if (safeParams.length > 0) {
+      stmt.bind(safeParams);
+    }
     const rows = [];
     while (stmt.step()) {
       rows.push(stmt.getAsObject());
@@ -272,8 +257,8 @@ function executeSqlite(sql, params = []) {
     stmt.free();
     return [rows, []];
   } else {
-    sqliteDb.run(sql, params);
-    const isInsert = /^INSERT/i.test(trimmed);
+    sqliteDb.run(cleanSql, safeParams);
+    const isInsert = /^INSERT/i.test(cleanSql);
     let insertId = 0;
     let affectedRows = 0;
 
