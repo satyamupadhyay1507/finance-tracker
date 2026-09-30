@@ -5,6 +5,7 @@ const { sanitizeInput, securityHeaders } = require('./middleware/sanitize');
 const swaggerUi = require('swagger-ui-express');
 const swaggerSpecs = require('./swagger');
 const pool = require('./config/db');
+const { initializeDatabase, dbHost } = require('./config/db');
 
 process.on("uncaughtException", (err) => {
   console.error("Uncaught Exception:", err);
@@ -21,26 +22,19 @@ const app = express();
 const PORT = process.env.PORT || 5001; // default 5001 (prevents macOS AirPlay port 5000 conflict)
 
 // middlewares
-app.use(securityHeaders()); // added security headers
-// console.log("starting middleware"); // debug // added security headers
-// console.log("starting middleware");
+app.use(securityHeaders());
 app.use(cors({
-
   origin: "*",
-
-  methods: ["GET", "POST", "PUT", "DELETE"],
-
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
   credentials: false
-
 }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(sanitizeInput);
 
 app.get("/", (req, res) => {
-
   res.send("Backend Working");
-
 });
 
 // routes
@@ -50,7 +44,6 @@ const analyticsRoutes = require('./routes/analytics');
 const userRoutes = require('./routes/users');
 
 // swagger docs route
-// todo: maybe change this path if conflicting
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpecs));
 
 app.use('/api/auth', authRoutes);
@@ -58,22 +51,65 @@ app.use('/api/transactions', transactionRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/users', userRoutes);
 
-// test route
-app.get('/api/health', (req, res) => {
-  // console.log("health check called")
-  res.json({ status: 'ok' });
+// test route with database connection health check
+app.get('/api/health', async (req, res) => {
+  try {
+    const [result] = await pool.query('SELECT 1 + 1 AS solution');
+    const [userRows] = await pool.query('SELECT COUNT(*) as count FROM users').catch(() => [[{ count: 0 }]]);
+    res.json({
+      status: 'ok',
+      database: 'connected',
+      dbHost: dbHost || 'localhost',
+      usersCount: userRows[0]?.count || 0
+    });
+  } catch (err) {
+    res.status(503).json({
+      status: 'error',
+      database: 'disconnected',
+      dbHost: dbHost || 'localhost',
+      error: err.message,
+      code: err.code
+    });
+  }
 });
 
-// seed route
+// seed route: ensures tables and demo data exist
 app.get('/api/seed', async (req, res) => {
   try {
     const fs = require('fs');
     const path = require('path');
-    const pool = require('./config/db');
+
+    // 1. Ensure tables, indexes, default categories, and demo accounts exist
+    const initResult = await initializeDatabase();
+    if (!initResult.success) {
+      return res.status(500).json({ error: 'Database initialization failed: ' + initResult.error });
+    }
+
+    // 2. Load seed_data.sql if present and execute each statement
     const sqlPath = path.join(__dirname, '../database/seed_data.sql');
-    const sql = fs.readFileSync(sqlPath, 'utf8');
-    await pool.query(sql);
-    res.json({ message: 'Database seeded successfully with demo data!' });
+    if (fs.existsSync(sqlPath)) {
+      const sqlContent = fs.readFileSync(sqlPath, 'utf8');
+      const statements = sqlContent
+        .split(';')
+        .map(s => s.trim())
+        .filter(s => s.length > 0 && !s.startsWith('--'));
+
+      let executed = 0;
+      for (const statement of statements) {
+        try {
+          await pool.query(statement);
+          executed++;
+        } catch (e) {
+          // Ignore duplicate entries (e.g. users or transactions already inserted)
+          if (e.code !== 'ER_DUP_ENTRY') {
+            console.warn('Seed warning:', e.message);
+          }
+        }
+      }
+      res.json({ message: 'Database seeded successfully with demo data!', statementsExecuted: executed });
+    } else {
+      res.json({ message: 'Database schema and demo users ready!' });
+    }
   } catch (err) {
     console.error('Seed error:', err);
     res.status(500).json({ error: err.message });
@@ -87,13 +123,10 @@ app.use((req, res) => {
 
 // errors
 app.use((err, req, res, next) => {
-  console.error('error happened:', err);
-  res.status(500).json({ message: 'Internal server error' });
+  console.error('Unhandled server error:', err);
+  res.status(500).json({ message: 'Internal server error', error: err.message });
 });
 
 app.listen(PORT, "0.0.0.0", () => {
-
   console.log(`server is running on port ${PORT}`);
-
 });
-

@@ -1,8 +1,13 @@
 import axios from 'axios';
 
 // creating axios instance with backend url
+// Defaults to the production Render backend in production, and localhost:5001 in dev
+const defaultBaseUrl = import.meta.env.DEV
+  ? 'http://localhost:5001/api'
+  : 'https://finance-tracker-api-335d.onrender.com/api';
+
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5001/api',
+  baseURL: import.meta.env.VITE_API_URL || defaultBaseUrl,
   headers: {
     'Content-Type': 'application/json'
   }

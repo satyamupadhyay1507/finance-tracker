@@ -34,8 +34,8 @@ async function getSummary(req, res) {
 
     res.json(data);
   } catch (err) {
-    console.log(err);
-    res.status(500).json({ message: 'error' });
+    console.error('getSummary error:', err);
+    res.status(500).json({ message: 'Error retrieving summary.', error: err.message });
   }
 }
 
@@ -43,7 +43,7 @@ async function getSummary(req, res) {
 async function getMonthlyOverview(req, res) {
   try {
     const userId = req.user.id;
-    const year = req.query.year || new Date().getFullYear();
+    const year = parseInt(req.query.year) || new Date().getFullYear();
 
     const [rows] = await pool.execute(
       `SELECT 
@@ -70,7 +70,8 @@ async function getMonthlyOverview(req, res) {
 
     res.json({ year: parseInt(year), months });
   } catch (err) {
-    res.status(500).json({ message: 'error' });
+    console.error('getMonthlyOverview error:', err);
+    res.status(500).json({ message: 'Error retrieving monthly overview.', error: err.message });
   }
 }
 
@@ -82,7 +83,7 @@ async function getCategoryBreakdown(req, res) {
     // check cache for categories
     const catCache = `cats_user_${userId}`;
     let cached = await getCache(catCache);
-    if(cached) return res.json(cached);
+    if (cached) return res.json(cached);
 
     const [rows] = await pool.execute(
       `SELECT c.name, c.icon, SUM(t.amount) as total, COUNT(t.id) as count
@@ -107,7 +108,8 @@ async function getCategoryBreakdown(req, res) {
     await setCache(catCache, resData, 3600);
     res.json(resData);
   } catch (err) {
-    res.status(500).json({ message: 'error' });
+    console.error('getCategoryBreakdown error:', err);
+    res.status(500).json({ message: 'Error retrieving category breakdown.', error: err.message });
   }
 }
 
@@ -116,6 +118,7 @@ async function getIncomeVsExpense(req, res) {
   try {
     const userId = req.user.id;
     const months = parseInt(req.query.months) || 6;
+    const safeMonths = Math.max(1, Math.min(24, months));
 
     const [rows] = await pool.execute(
       `SELECT 
@@ -123,10 +126,10 @@ async function getIncomeVsExpense(req, res) {
         type,
         SUM(amount) as total
        FROM transactions
-       WHERE user_id = ? AND date >= DATE_SUB(CURDATE(), INTERVAL ? MONTH)
+       WHERE user_id = ? AND date >= DATE_SUB(CURDATE(), INTERVAL ${safeMonths} MONTH)
        GROUP BY period, type
        ORDER BY period`,
-      [userId, months]
+      [userId]
     );
 
     const periodsMap = {};
@@ -139,7 +142,8 @@ async function getIncomeVsExpense(req, res) {
 
     res.json({ trends: Object.values(periodsMap) });
   } catch (err) {
-    res.status(500).json({ message: 'error' });
+    console.error('getIncomeVsExpense error:', err);
+    res.status(500).json({ message: 'Error retrieving trends.', error: err.message });
   }
 }
 
